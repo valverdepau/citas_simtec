@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import urllib.request
 from typing import Any, Dict, List
 
 from app.services.reglas import limpiar_texto
@@ -28,6 +29,9 @@ CONTRATO_LLAVES = [
     "hora_fin",
     "equipos",
 ]
+
+# Endpoint de Gemini (modelo flash rápido y gratuito)
+GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent"
 
 
 def _llave_configurada() -> bool:
@@ -58,15 +62,15 @@ def enviar_al_agente(texto_limpio: str, fecha_hoy: str, dia_semana: str, maquina
     prompt = _construir_prompt(texto_limpio, fecha_hoy, dia_semana, maquinas)
 
     try:
-        respuesta = _llamar_agente(prompt)
-    except Exception:
+        respuesta_texto = _llamar_agente(prompt)
+    except Exception as exc:
         return {
             "error": "No se pudo conectar con el agente. Puedes llenar la solicitud a mano.",
-            "detalle": "Error llamando al servicio de IA",
+            "detalle": f"Error llamando al servicio de IA: {exc}",
         }
 
     # Validar el JSON devuelto
-    return validar_json_agente(respuesta)
+    return validar_json_agente(respuesta_texto)
 
 
 def _construir_prompt(texto: str, fecha_hoy: str, dia_semana: str, maquinas: List[str]) -> str:
@@ -81,7 +85,7 @@ Texto de la solicitud: {texto}
 
 Reglas:
 - Nunca inventes. Si un dato no aparece en el texto, escribe "no indicado".
-- Responde siempre con un JSON y con estas llaves en español, aunque el texto venga en inglés o con faltas.
+- Responde siempre con un JSON y con esas llaves en español, aunque el texto venga en inglés o con faltas.
 - Las fechas relativas ("mañana", "el jueves") se resuelven con la fecha de hoy. "El jueves" es la próxima ocurrencia posterior a hoy. Si hay dos fechas posibles, fecha es "no indicado".
 - Las horas imprecisas ("en la mañana", "en la tarde") dan "no indicado". Si hay duración ("por 2 horas desde las 9"), calcula hora_fin. Una hora sin AM/PM se interpreta dentro de 08:00 a 16:00; si no queda claro, "no indicado".
 - Acepta sinónimos evidentes (impresora 3D = Impresión 3D, láser = Corte láser, VR = Realidad virtual). Si la máquina no está en la lista, equipos es ["no indicado"].
@@ -101,21 +105,53 @@ No incluyas texto adicional antes o después del JSON."""
 
 
 def _llamar_agente(prompt: str) -> str:
-    """Llama al servicio de IA con la llave de .env.
+    """Llama a la API de Google Gemini con la llave de .env.
 
-    Esta función es un punto de extensión: aquí se integraría el cliente
-    del proveedor de IA (OpenAI, Anthropic, etc.) usando AGENTE_API_KEY.
-
-    Por ahora retorna el prompt como texto simulado para permitir pruebas
-    sin llave real. Reemplazar con la llamada real al servicio.
+    Usa urllib (estándar de Python) para no depender de librerías externas.
     """
-    # TODO: Integrar cliente real de IA usando AGENTE_API_KEY
-    # Ejemplo placeholder:
-    # import openai
-    # client = openai.OpenAI(api_key=AGENTE_API_KEY)
-    # resp = client.chat.completions.create(...)
-    # return resp.choices[0].message.content
-    return prompt  # placeholder para pruebas sin llave real
+    if not AGENTE_API_KEY:
+        raise RuntimeError("AGENTE_API_KEY no configurada")
+
+    payload = {
+        "contents": [
+            {
+                "parts": [
+                    {"text": prompt}
+                ]
+            }
+        ]
+    }
+
+    data = json.dumps(payload).encode("utf-8")
+    url = f"{GEMINI_URL}?key={AGENTE_API_KEY}"
+
+    req = urllib.request.Request(
+        url,
+        data=data,
+        headers={
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
+
+    with urllib.request.urlopen(req, timeout=30) as response:
+        body = response.read().decode("utf-8")
+        resultado = json.loads(body)
+
+    # Extraer el texto de la respuesta de Gemini
+    candidatos = resultado.get("candidates", [])
+    if not candidatos:
+        raise RuntimeError("Gemini no devolvió candidatos")
+
+    partes = candidatos[0].get("content", {}).get("parts", [])
+    if not partes:
+        raise RuntimeError("Gemini no devolvió partes de texto")
+
+    texto = partes[0].get("text", "")
+    if not texto:
+        raise RuntimeError("Gemini devolvió texto vacío")
+
+    return texto
 
 
 def validar_json_agente(respuesta: Any) -> Dict[str, Any]:
@@ -126,8 +162,16 @@ def validar_json_agente(respuesta: Any) -> Dict[str, Any]:
     if isinstance(respuesta, dict):
         datos = respuesta
     elif isinstance(respuesta, str):
+        # Limpiar posibles bloques de markdown ```json ... ```
+        texto = respuesta.strip()
+        if texto.startswith("```"):
+            texto = texto.split("```", 2)
+            if len(texto) >= 3:
+                texto = texto[2].strip()
+                if texto.startswith("json"):
+                    texto = texto[4:].strip()
         try:
-            datos = json.loads(respuesta)
+            datos = json.loads(texto)
         except json.JSONDecodeError:
             return {
                 "error": "No pude leer la solicitud. Complétala a mano.",
