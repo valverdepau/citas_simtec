@@ -38,7 +38,9 @@ def inicio():
 
 @citas_bp.route("/inicio/leer", methods=["POST"])
 def leer_solicitud():
-    """Recibe el texto de la solicitud, llama al agente y muestra el resultado."""
+    """Recibe el texto de la solicitud, llama al agente y muestra el resultado.
+    Si el agente falla, muestra el formulario para llenado manual.
+    """
     texto_original = request.form.get("texto_solicitud", "").strip()
     if not texto_original:
         return render_template("inicio.html", error="Pega el texto de la solicitud")
@@ -65,12 +67,15 @@ def leer_solicitud():
     # Llamar al agente
     respuesta_agente = enviar_al_agente(texto_limpio, fecha_hoy, dia_semana_es, maquinas_validas)
 
+    # Si el agente falla, mostrar formulario para llenado manual
     if "error" in respuesta_agente:
         return render_template(
             "inicio.html",
             texto_original=texto_original,
             error=respuesta_agente["error"],
             detalle=respuesta_agente.get("detalle", ""),
+            modo_manual=True,  # Indica que se debe mostrar formulario vacío para llenado manual
+            maquinas_validas=maquinas_validas,
         )
 
     # Validar semáforo con los datos del agente
