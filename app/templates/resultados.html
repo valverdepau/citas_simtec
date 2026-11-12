@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}Citas de la semana · CitasSIMTEC{% endblock %}
+
+{% block contenido %}
+<div class="card">
+    <h2>Citas</h2>
+    <p class="texto-ayuda">Filtra las citas registradas por semana, por día o muestra todas.</p>
+
+    <form method="GET" action="/citas" style="margin-bottom: 1rem;">
+        <div class="form-row">
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <label>Tipo de filtro</label>
+                <select name="tipo" id="tipo_filtro" onchange="this.form.submit()">
+                    <option value="ninguno" {% if tipo_filtro == "ninguno" %}selected{% endif %}>Ninguno (todas)</option>
+                    <option value="semana" {% if tipo_filtro == "semana" %}selected{% endif %}>Semana</option>
+                    <option value="dia" {% if tipo_filtro == "dia" %}selected{% endif %}>Día</option>
+                </select>
+            </div>
+            {% if tipo_filtro != "ninguno" %}
+            <div id="grupo_fecha" style="display: flex; align-items: center; gap: 0.5rem;">
+                <label>Fecha</label>
+                <input type="date" name="fecha" id="selector_fecha" value="{{ semana_seleccionada or '' }}">
+            </div>
+            {% endif %}
+            <div style="display: flex; align-items: end; gap: 0.5rem;">
+                <button type="submit">Aplicar filtro</button>
+                <button type="button" onclick="location.href='/citas?tipo=ninguno'">Quitar filtro</button>
+                <button type="button" class="secondary" onclick="exportarExcel()">Descargar Excel</button>
+            </div>
+        </div>
+    </form>
+
+    <!-- Tablero con contadores grandes -->
+    <div class="contadores" style="display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+        <div class="contador contador-total" style="flex: 1; min-width: 140px; text-align: center; padding: 1rem; background: #1f3a5f; color: #ffffff; border-radius: 8px;">
+            <div class="valor" style="font-size: 2rem; font-weight: 800;">{{ total_citas }}</div>
+            <div class="etiqueta" style="font-size: 0.85rem; opacity: 0.9;">Citas registradas</div>
+        </div>
+        <div class="contador contador-verde" style="flex: 1; min-width: 140px; text-align: center; padding: 1rem; background: #dcfce7; color: #166534; border: 2px solid #86efac; border-radius: 8px;">
+            <div class="valor" style="font-size: 2rem; font-weight: 800;">{{ contador_verde }}</div>
+            <div class="etiqueta" style="font-size: 0.85rem; opacity: 0.8;">Verde</div>
+        </div>
+        <div class="contador contador-amarillo" style="flex: 1; min-width: 140px; text-align: center; padding: 1rem; background: #fef3c7; color: #92400e; border: 2px solid #fcd34d; border-radius: 8px;">
+            <div class="valor" style="font-size: 2rem; font-weight: 800;">{{ contador_amarillo }}</div>
+            <div class="etiqueta" style="font-size: 0.85rem; opacity: 0.8;">Amarillo</div>
+        </div>
+        <div class="contador contador-rojo" style="flex: 1; min-width: 140px; text-align: center; padding: 1rem; background: #fee2e2; color: #991b1b; border: 2px solid #fca5a5; border-radius: 8px;">
+            <div class="valor" style="font-size: 2rem; font-weight: 800;">{{ contador_rojo }}</div>
+            <div class="etiqueta" style="font-size: 0.85rem; opacity: 0.8;">Rojo</div>
+        </div>
+        <div class="contador contador-tecnico" style="flex: 1; min-width: 140px; text-align: center; padding: 1rem; background: #e0e7ff; color: #4338ca; border: 2px solid #a5b4fc; border-radius: 8px;">
+            <div class="valor" style="font-size: 2rem; font-weight: 800;">{{ contador_tecnico }}</div>
+            <div class="etiqueta" style="font-size: 0.85rem; opacity: 0.8;">Requieren técnico</div>
+        </div>
+    </div>
+
+    <!-- Tabla con filtro -->
+    <table id="tabla_citas">
+        <thead>
+            <tr>
+                <th>Fecha</th>
+                <th>Hora</th>
+                <th>Máquinas</th>
+                <th>¿Requiere técnico?</th>
+                <th>Asistente de turno</th>
+                <th>Estado</th>
+                <th>Semáforo</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for cita in citas %}
+            <tr data-fecha="{{ cita.fecha }}" data-semaforo="{{ cita.semaforo_color }}" data-estado="{{ cita.estado }}">
+                <td>{{ cita.fecha }}</td>
+                <td>{{ cita.hora_inicio }} a {{ cita.hora_fin }}</td>
+                <td>{{ cita.maquinas | join(", ") }}</td>
+                <td>{{ "Sí" if cita.requiere_tecnico else "No" }}</td>
+                <td>{{ cita.asistente_turno or "—" }}</td>
+                <td>{{ cita.estado }}</td>
+                <td><span class="semáforo {{ cita.semaforo_color }}">{{ cita.semaforo_color }}</span></td>
+                <td>
+                    <a href="/citas/{{ cita.id }}" class="secondary" style="padding:0.25rem 0.5rem; font-size:0.85rem;">Detalle</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {% if citas|length == 0 %}
+    <p class="texto-ayuda">No hay citas para mostrar con el filtro seleccionado.</p>
+    {% endif %}
+</div>
+
+<script>
+function exportarExcel() {
+    const tipo = document.getElementById('tipo_filtro').value;
+    const fechaInput = document.querySelector('input[name="fecha"]');
+    if (!fechaInput || !fechaInput.value) {
+        alert('Selecciona una fecha primero.');
+        return;
+    }
+    window.location.href = '/citas/excel?tipo=' + tipo + '&fecha=' + fechaInput.value;
+}
+</script>
+{% endblock %}

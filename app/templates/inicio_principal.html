@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}Inicio · CitasSIMTEC{% endblock %}
+
+{% block contenido %}
+<div class="card" style="max-width: 500px; margin: 0 auto;">
+    <h2>CitasSIMTEC</h2>
+    <p class="texto-ayuda" style="text-align: center; margin-bottom: 2rem;">
+        Laboratorio SIMTEC · Escuela de Ingeniería en Producción Industrial, TEC<br>
+        Selecciona una opción para continuar:
+    </p>
+
+    <div style="display: flex; flex-direction: column; gap: 1rem;">
+        <a href="/inicio" style="display: block; padding: 1.5rem; background: #1f3a5f; color: #ffffff; text-decoration: none; border-radius: 6px; font-size: 1.1rem; font-weight: 600; text-align: center; border: 2px solid #1f3a5f;">
+            📝 Registrar una cita
+        </a>
+        <a href="/citas" style="display: block; padding: 1.5rem; background: #ffffff; color: #1f3a5f; text-decoration: none; border-radius: 6px; font-size: 1.1rem; font-weight: 600; text-align: center; border: 2px solid #1f3a5f;">
+            📊 Ver citas de la semana
+        </a>
+    </div>
+
+    <p class="texto-ayuda" style="margin-top: 2rem; font-size: 0.85rem;">
+        CitasSIMTEC · App web local para la gestión de citas de laboratorio
+    </p>
+</div>
+{% endblock %}
