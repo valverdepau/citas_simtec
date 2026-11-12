@@ -1,4 +1,4 @@
-# Variables de entorno sensibles
+# Variables de entorno sensibles (NUNCA subir a GitHub)
 .env
 
 # Virtual environment
@@ -37,4 +37,3 @@ wheels/
 
 # Logs
 *.log
-

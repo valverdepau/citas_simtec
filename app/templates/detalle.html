@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block title %}Detalle de cita · CitasSIMTEC{% endblock %}
+
+{% block contenido %}
+<div class="card">
+    <h2>Detalle de cita</h2>
+
+    <div class="form-row">
+        <div>
+            <label>Solicitante</label>
+            <p>{{ cita.solicitante }}</p>
+        </div>
+        <div>
+            <label>Tipo de solicitante</label>
+            <p>{{ cita.solicitante_tipo or "no indicado" }}</p>
+        </div>
+        <div>
+            <label>Fecha</label>
+            <p>{{ cita.fecha }}</p>
+        </div>
+        <div>
+            <label>Hora</label>
+            <p>{{ cita.hora_inicio }} a {{ cita.hora_fin }}</p>
+        </div>
+    </div>
+
+    <div>
+        <label>Máquinas</label>
+        <p>{{ cita.maquinas | join(", ") }}</p>
+    </div>
+
+    <div>
+        <label>Otros</label>
+        <p>{{ cita.otros or "No" }}</p>
+    </div>
+
+    <div>
+        <label>Requiere al técnico presente</label>
+        <p>{{ "Sí" if cita.requiere_tecnico else "No" }}</p>
+    </div>
+
+    <div>
+        <label>Asistente de turno</label>
+        <p>{{ cita.asistente_turno or "SIN ASISTENTE" }}</p>
+    </div>
+
+    <div>
+        <label>Estado</label>
+        <p><strong>{{ cita.estado }}</strong></p>
+    </div>
+
+    <div>
+        <label>Semáforo</label>
+        <p><span class="semáforo {{ cita.semaforo_color }}">{{ cita.semaforo_color }}</span></p>
+        {% if cita.mensajes_semaforo %}
+        {% for m in cita.mensajes_semaforo %}
+        <p class="mensaje {{ cita.semaforo_color }}">{{ m }}</p>
+        {% endfor %}
+        {% endif %}
+        {% if cita.alerta_turno %}
+        <div class="alerta">{{ cita.alerta_turno }}</div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card">
+    <h2>Acciones</h2>
+    <p class="texto-ayuda">Solo el técnico puede aprobar, rechazar o cancelar una cita.</p>
+
+    {% if cita.estado == "Pendiente" %}
+    <form method="POST" action="/citas/{{ cita.id }}/aprobar" style="display:inline;">
+        <button type="submit">Aprobar cita</button>
+    </form>
+    <form method="POST" action="/citas/{{ cita.id }}/rechazar" style="display:inline;">
+        <button type="submit" class="danger">Rechazar cita</button>
+    </form>
+    {% endif %}
+
+    <form method="POST" action="/citas/{{ cita.id }}/cancelar" style="display:inline;">
+        <button type="submit" class="danger">Cancelar cita</button>
+    </form>
+
+    <button onclick="copiarAviso()">Generar aviso (copiar)</button>
+</div>
+
+<div id="aviso" class="card oculto" style="margin-top:1rem;">
+    <h3>Aviso para copiar y enviar</h3>
+    <pre id="texto_aviso">{{ aviso_texto }}</pre>
+    <button onclick="copiarAviso()">Copiar al portapapeles</button>
+</div>
+
+<script>
+function copiarAviso() {
+    const texto = document.getElementById('texto_aviso').textContent;
+    navigator.clipboard.writeText(texto).then(() => {
+        const btn = document.querySelector('button[onclick="copiarAviso()"]');
+        const original = btn.textContent;
+        btn.textContent = '¡Copiado!';
+        setTimeout(() => btn.textContent = original, 1500);
+    });
+}
+
+// Mostrar u ocultar el aviso al hacer clic en "Generar aviso"
+document.querySelectorAll('button').forEach(btn => {
+    if (btn.textContent.includes('Generar aviso')) {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const aviso = document.getElementById('aviso');
+            aviso.classList.toggle('oculto');
+        });
+    }
+});
+</script>
+{% endblock %}

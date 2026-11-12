@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}Nueva solicitud · CitasSIMTEC{% endblock %}
+
+{% block contenido %}
+<div class="card">
+    <h2>Nueva solicitud de cita</h2>
+    <p class="texto-ayuda">Pega el texto de la solicitud (correo o mensaje) y haz clic en "Leer solicitud". El agente de IA lo convertirá en datos.</p>
+
+    <form method="POST" action="/inicio/leer">
+        <label for="texto_solicitud">Texto de la solicitud</label>
+        <textarea id="texto_solicitud" name="texto_solicitud" placeholder="Ejemplo: Soy profesor. Necesito el láser el lunes 9 de noviembre de 8:00 a 10:00.">{{ texto_original or "" }}</textarea>
+        <button type="submit">Leer solicitud</button>
+    </form>
+</div>
+
+{% if resultado %}
+<div class="card">
+    <h2>Resultado del agente de IA</h2>
+
+    <form method="POST" action="/inicio/guardar">
+        <input type="hidden" name="solicitante_tipo" value="{{ resultado.solicitante_tipo }}">
+        <input type="hidden" name="fecha" value="{{ resultado.fecha }}">
+        <input type="hidden" name="hora_inicio" value="{{ resultado.hora_inicio }}">
+        <input type="hidden" name="hora_fin" value="{{ resultado.hora_fin }}">
+
+        <div class="form-row">
+            <div>
+                <label>Tipo de solicitante</label>
+                <select name="solicitante_tipo" id="solicitante_tipo">
+                    <option value="profesor" {% if resultado.solicitante_tipo == "profesor" %}selected{% endif %}>Profesor</option>
+                    <option value="estudiante" {% if resultado.solicitante_tipo == "estudiante" %}selected{% endif %}>Estudiante</option>
+                    <option value="no indicado" {% if resultado.solicitante_tipo == "no indicado" %}selected{% endif %}>No indicado</option>
+                </select>
+            </div>
+            <div>
+                <label>Fecha</label>
+                <input type="date" name="fecha" id="fecha" value="{{ resultado.fecha }}">
+            </div>
+            <div>
+                <label>Hora inicio</label>
+                <input type="time" name="hora_inicio" id="hora_inicio" value="{{ resultado.hora_inicio }}">
+            </div>
+            <div>
+                <label>Hora fin</label>
+                <input type="time" name="hora_fin" id="hora_fin" value="{{ resultado.hora_fin }}">
+            </div>
+        </div>
+
+        <div>
+            <label>Máquinas</label>
+            <div>
+                {% for maquina in maquinas_validas %}
+                <label style="display:inline-block; margin-right:1rem; font-weight:normal;">
+                    <input type="checkbox" name="equipos" value="{{ maquina }}" {% if maquina in resultado.equipos %}checked{% endif %}> {{ maquina }}
+                </label>
+                {% endfor %}
+            </div>
+            {% if resultado.equipos == ["no indicado"] or (resultado.equipos and "no indicado" in resultado.equipos) %}
+            <p class="texto-ayuda">Ninguna máquina válida detectada. Selecciona las máquinas manualmente o déjala como "no indicado" para que el técnico lo revise.</p>
+            {% endif %}
+        </div>
+
+        <div class="semáforo {{ semaforo_color }}">
+            {{ semaforo_color | upper }}
+        </div>
+
+        {% if mensajes %}
+        {% for m in mensajes %}
+        <p class="mensaje {{ semaforo_color }}">{{ m }}</p>
+        {% endfor %}
+        {% endif %}
+
+        {% if alerta %}
+        <div class="alerta">{{ alerta }}</div>
+        {% endif %}
+
+        <p class="texto-ayuda">Requiere al técnico presente: {% if requiere_tecnico %}Sí{% else %}No{% endif %}</p>
+
+        <div style="margin-top: 1rem;">
+            <button type="submit">Guardar como pendiente</button>
+            <button type="submit" name="accion" value="aprobar" class="secondary">Aprobar</button>
+            <button type="submit" name="accion" value="rechazar" class="danger">Rechazar</button>
+        </div>
+    </form>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}CitasSIMTEC{% endblock %}</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #f5f7fa;
+            color: #1a1a1a;
+        }
+        header {
+            background: #1f3a5f;
+            color: #ffffff;
+            padding: 1rem 2rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        header h1 { margin: 0; font-size: 1.25rem; font-weight: 600; }
+        nav { margin-left: auto; }
+        nav a {
+            color: #ffffff;
+            text-decoration: none;
+            margin-left: 1.5rem;
+            font-size: 0.9rem;
+        }
+        nav a:hover { text-decoration: underline; }
+        main { max-width: 900px; margin: 2rem auto; padding: 0 1rem; }
+        .card {
+            background: #ffffff;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+        .card h2 { margin-top: 0; font-size: 1.1rem; color: #1f3a5f; border-bottom: 2px solid #1f3a5f; padding-bottom: 0.5rem; }
+        label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.25rem; color: #374151; }
+        input[type="text"],
+        input[type="date"],
+        input[type="time"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            font-size: 0.95rem;
+        }
+        textarea { resize: vertical; min-height: 120px; font-family: inherit; }
+        button {
+            background: #1f3a5f;
+            color: #ffffff;
+            border: none;
+            padding: 0.6rem 1.2rem;
+            border-radius: 4px;
+            font-size: 0.95rem;
+            cursor: pointer;
+            margin-right: 0.5rem;
+        }
+        button:hover { background: #2a4e7a; }
+        button.secondary { background: #6b7280; }
+        button.secondary:hover { background: #4b5563; }
+        button.danger { background: #b91c1c; }
+        button.danger:hover { background: #991b1b; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        .semáforo { display: inline-block; padding: 0.25rem 0.75rem; border-radius: 4px; font-weight: 700; font-size: 0.9rem; }
+        .semáforo.verde { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
+        .semáforo.amarillo { background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; }
+        .semáforo.rojo { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+        .mensaje { margin-top: 0.5rem; font-size: 0.9rem; }
+        .mensaje.rojo { color: #991b1b; }
+        .mensaje.amarillo { color: #92400e; }
+        .mensaje.verde { color: #166534; }
+        .alerta { background: #fef3c7; border: 1px solid #fcd34d; color: #92400e; padding: 0.75rem; border-radius: 4px; margin-top: 0.5rem; font-size: 0.9rem; }
+        .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1rem; }
+        .oculto { display: none; }
+        .texto-ayuda { font-size: 0.8rem; color: #6b7280; margin-top: 0.25rem; }
+        footer { padding: 1.5rem 2rem; color: #6b7280; font-size: 0.85rem; border-top: 1px solid #e5e7eb; margin-top: 2rem; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🔬 CitasSIMTEC</h1>
+        <nav>
+            <a href="/">Inicio</a>
+            <a href="/inicio">Registrar cita</a>
+            <a href="/citas">Citas de la semana</a>
+        </nav>
+    </header>
+    <main>
+        {% block contenido %}{% endblock %}
+    </main>
+    <footer>
+        CitasSIMTEC · Laboratorio SIMTEC, Escuela de Ingeniería en Producción Industrial, TEC · App web local
+    </footer>
+</body>
+</html>
