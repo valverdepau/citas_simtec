@@ -26,6 +26,37 @@ def _cita_a_dict_con_id(cita, cita_id):
     return d
 
 
+def _asegurar_citas_cargadas():
+    """Carga las citas del Excel si la memoria está vacía."""
+    global _citas, _contador_id
+    if not _citas:
+        cargadas = cargar_citas_excel()
+        _citas = cargadas
+        _contador_id = len(cargadas) + 1
+
+
+def _equipos_de_dict(d):
+    """Lista de máquinas de una cita ya convertida a dict.
+
+    Prefiere la lista completa guardada en la cita (equipos) y, si no existe
+    (por ejemplo, citas importadas del Excel), la deduce de las columnas.
+    """
+    equipos = d.get("equipos") or []
+    if equipos:
+        return list(equipos)
+
+    resultado = []
+    if d.get("corte_laser") == "Si":
+        resultado.append("Corte láser")
+    if d.get("impresion_3d") == "Si":
+        resultado.append("Impresión 3D")
+    if d.get("dobot") == "Si":
+        resultado.append("Dobot")
+    if d.get("otros") and d.get("otros") != "No":
+        resultado.append(d["otros"])
+    return resultado
+
+
 # ---------------------------------------------------------------------------
 # Rutas de páginas (HTML)
 # ---------------------------------------------------------------------------
@@ -115,12 +146,20 @@ def guardar_solicitud():
     equipos = request.form.getlist("equipos")
     accion = request.form.get("accion", "guardar")
 
-    # Construir dict de máquinas para el modelo
+    # Asegurar que las citas del Excel están cargadas antes de agregar una nueva
+    _asegurar_citas_cargadas()
+
+    # Construir dict de máquinas para el modelo (formato del Excel)
+    equipos = [e for e in equipos if e and e != "no indicado"]
+    basicas = ("Corte láser", "Impresión 3D", "Dobot")
+    otras = [e for e in equipos if e not in basicas]
+
     maquinas_dict = {
         "corte_laser": "Si" if "Corte láser" in equipos else "No",
         "impresion_3d": "Si" if "Impresión 3D" in equipos else "No",
         "dobot": "Si" if "Dobot" in equipos else "No",
-        "otros": "No",
+        # La columna Otros del Excel admite un solo nombre; se guarda la primera.
+        "otros": otras[0] if otras else "No",
     }
 
     estado = "Pendiente"
@@ -145,6 +184,7 @@ def guardar_solicitud():
         dobot=maquinas_dict["dobot"],
         otros=maquinas_dict["otros"],
         estado=estado,
+        equipos=equipos,
     )
     cita.id = _contador_id
     _contador_id += 1
@@ -163,11 +203,7 @@ def listar_citas_html():
     from datetime import datetime, date, timedelta
 
     # Cargar citas automáticamente si no están en memoria
-    global _citas, _contador_id
-    if not _citas:
-        citas_cargadas = cargar_citas_excel()
-        _citas = citas_cargadas
-        _contador_id = len(citas_cargadas) + 1
+    _asegurar_citas_cargadas()
 
     # Obtener parámetros de filtro
     tipo_filtro = request.args.get("tipo", "ninguno")  # semana, dia, ninguno
@@ -200,11 +236,6 @@ def listar_citas_html():
     contador_rojo = 0
     contador_tecnico = 0
 
-    maquinas_validas = [
-        "Corte láser", "Impresión 3D", "Dobot", "Termoformadora",
-        "Celda de manufactura", "Realidad virtual", "Torno CNC", "Fresadora",
-    ]
-
     turnos = [
         {"día": "Lunes", "hora_inicio": "08:00", "hora_fin": "12:00", "nombre": "Asistente A"},
         {"día": "Lunes", "hora_inicio": "13:00", "hora_fin": "16:00", "nombre": "Asistente B"},
@@ -222,11 +253,7 @@ def listar_citas_html():
         d["id"] = getattr(c, "id", i + 1)
 
         # Calcular equipos para el semáforo
-        equipos = []
-        if d.get("corte_laser") == "Si": equipos.append("Corte láser")
-        if d.get("impresion_3d") == "Si": equipos.append("Impresión 3D")
-        if d.get("dobot") == "Si": equipos.append("Dobot")
-        if d.get("otros") and d.get("otros") != "No": equipos.append(d["otros"])
+        equipos = _equipos_de_dict(d)
 
         semaforo = evaluar_semaforo(
             d["fecha"], d["hora_inicio"], d["hora_fin"], equipos, [], turnos
@@ -238,18 +265,14 @@ def listar_citas_html():
         d["asistente_turno"] = semaforo["asistentes"][0] if semaforo["asistentes"] else None
 
         # Construir lista de máquinas para mostrar
-        maquinas_mostrar = []
-        for m in maquinas_validas:
-            clave = m.lower().replace(" ", "_")
-            if d.get(clave) == "Si":
-                maquinas_mostrar.append(m)
-        if d.get("otros") and d.get("otros") != "No":
-            maquinas_mostrar.append(d["otros"])
-        d["maquinas"] = maquinas_mostrar
+        d["maquinas"] = list(equipos)
 
         # Aplicar filtro de fecha en el servidor
         if fecha_inicio and fecha_fin:
-            fecha_cita = date.fromisoformat(d["fecha"])
+            try:
+                fecha_cita = date.fromisoformat(d["fecha"])
+            except (ValueError, TypeError):
+                continue  # cita sin fecha válida (amarilla)
             if fecha_cita < fecha_inicio or fecha_cita > fecha_fin:
                 continue
 
@@ -310,11 +333,7 @@ def detalle_cita(cita_id):
     d["id"] = cita_id
 
     # Calcular equipos para el semáforo
-    equipos = []
-    if d.get("corte_laser") == "Si": equipos.append("Corte láser")
-    if d.get("impresion_3d") == "Si": equipos.append("Impresión 3D")
-    if d.get("dobot") == "Si": equipos.append("Dobot")
-    if d.get("otros") and d.get("otros") != "No": equipos.append(d["otros"])
+    equipos = _equipos_de_dict(d)
 
     semaforo = evaluar_semaforo(
         d["fecha"], d["hora_inicio"], d["hora_fin"], equipos, [], turnos=None
@@ -335,18 +354,7 @@ def detalle_cita(cita_id):
         f"Asistente de turno: {d['asistente_turno'] or 'SIN ASISTENTE'}"
     )
 
-    maquinas_validas = [
-        "Corte láser", "Impresión 3D", "Dobot", "Termoformadora",
-        "Celda de manufactura", "Realidad virtual", "Torno CNC", "Fresadora",
-    ]
-    maquinas_mostrar = []
-    for m in maquinas_validas:
-        clave = m.lower().replace(" ", "_")
-        if d.get(clave) == "Si":
-            maquinas_mostrar.append(m)
-    if d.get("otros") and d.get("otros") != "No":
-        maquinas_mostrar.append(d["otros"])
-    d["maquinas"] = maquinas_mostrar
+    d["maquinas"] = list(equipos)
 
     return render_template(
         "detalle.html",
@@ -364,11 +372,7 @@ def aprobar_cita(cita_id):
         return "Cita no encontrada", 404
 
     d = cita.a_dict() if hasattr(cita, "a_dict") else dict(cita)
-    equipos = []
-    if d.get("corte_laser") == "Si": equipos.append("Corte láser")
-    if d.get("impresion_3d") == "Si": equipos.append("Impresión 3D")
-    if d.get("dobot") == "Si": equipos.append("Dobot")
-    if d.get("otros") and d.get("otros") != "No": equipos.append(d["otros"])
+    equipos = _equipos_de_dict(d)
 
     semaforo = evaluar_semaforo(
         d["fecha"], d["hora_inicio"], d["hora_fin"], equipos, _citas

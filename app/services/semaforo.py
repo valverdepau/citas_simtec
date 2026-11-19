@@ -119,6 +119,7 @@ def evaluar_semaforo(
         "impresion_3d": "Si" if "Impresión 3D" in equipos else "No",
         "dobot": "Si" if "Dobot" in equipos else "No",
         "otros": equipos[-1] if len(equipos) > 3 else "No",
+        "equipos": list(equipos),
         "estado": inicializar_estado(),  # R10: Pendiente
     }
     r6 = validar_conflicto(cita_nueva, citas_existentes)

@@ -152,6 +152,9 @@ def _maquinas_de_cita(cita: dict) -> list:
     """Extrae la lista de nombres de máquina de una cita (dict o Cita)."""
     if hasattr(cita, "a_dict"):
         cita = cita.a_dict()
+    equipos = cita.get("equipos") or []
+    if equipos:
+        return list(equipos)
     maquinas = []
     if str(cita.get("corte_laser", "No")).strip() == "Si":
         maquinas.append("Corte láser")

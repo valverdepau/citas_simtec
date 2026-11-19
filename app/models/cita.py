@@ -22,6 +22,8 @@ class Cita:
     dobot: str = "No"  # Si / No
     otros: str = "No"  # nombre de la máquina o "No"
     estado: str = "Pendiente"  # R10
+    solicitante_tipo: str = "no indicado"  # profesor / estudiante / no indicado
+    equipos: list = field(default_factory=list)  # lista completa de máquinas de la cita
 
     def __post_init__(self):
         # Normalizar estados válidos (R10)
@@ -40,4 +42,6 @@ class Cita:
             "dobot": self.dobot,
             "otros": self.otros,
             "estado": self.estado,
+            "solicitante_tipo": self.solicitante_tipo,
+            "equipos": list(self.equipos),
         }
