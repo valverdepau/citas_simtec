@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}Entrar · CitasSIMTEC{% endblock %}
+
+{% block nav %}{% endblock %}
+
+{% block contenido %}
+<div class="card" style="max-width: 420px; margin: 2rem auto;">
+    <h2>Entrar</h2>
+    <p class="texto-ayuda">Ingresa el usuario y la contraseña del administrador.</p>
+
+    {% if error %}
+    <p class="mensaje rojo">{{ error }}</p>
+    {% endif %}
+
+    <form method="POST" action="/login">
+        <div style="margin-bottom: 0.75rem;">
+            <label for="usuario">Usuario</label>
+            <input type="text" id="usuario" name="usuario" autocomplete="username" autofocus>
+        </div>
+        <div style="margin-bottom: 1rem;">
+            <label for="clave">Contraseña</label>
+            <input type="password" id="clave" name="clave" autocomplete="current-password">
+        </div>
+        <button type="submit">Entrar</button>
+    </form>
+</div>
+{% endblock %}

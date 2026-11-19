@@ -11,6 +11,7 @@ from app.services.datos import cargar_citas_excel
 from app.services.semaforo import evaluar_semaforo, evaluar_aprobacion
 from app.services.agente import preparar_texto_para_agente, enviar_al_agente
 from app.models.cita import Cita
+from app.controllers.auth import login_requerido
 
 citas_bp = Blueprint("citas", __name__)
 
@@ -62,12 +63,14 @@ def _equipos_de_dict(d):
 # ---------------------------------------------------------------------------
 
 @citas_bp.route("/inicio", methods=["GET"])
+@login_requerido
 def inicio():
     """Pantalla de inicio (P2): formulario para pegar texto de solicitud."""
     return render_template("inicio.html")
 
 
 @citas_bp.route("/inicio/leer", methods=["POST"])
+@login_requerido
 def leer_solicitud():
     """Recibe el texto de la solicitud, llama al agente y muestra el resultado.
     Si el agente falla, muestra el formulario para llenado manual.
@@ -135,6 +138,7 @@ def leer_solicitud():
 
 
 @citas_bp.route("/inicio/guardar", methods=["POST"])
+@login_requerido
 def guardar_solicitud():
     """Guarda la cita como Pendiente (o Aprobada/Rechazada según acción)."""
     global _contador_id
@@ -198,6 +202,7 @@ def guardar_solicitud():
 # ---------------------------------------------------------------------------
 
 @citas_bp.route("/citas", methods=["GET"])
+@login_requerido
 def listar_citas_html():
     """Pantalla de resultados (P1): tabla de citas con contadores y filtro por servidor."""
     from datetime import datetime, date, timedelta
@@ -301,12 +306,14 @@ def listar_citas_html():
 
 
 @citas_bp.route("/citas/json", methods=["GET"])
+@login_requerido
 def listar_citas_json():
     """Devuelve todas las citas cargadas (JSON)."""
     return jsonify([c.a_dict() if hasattr(c, "a_dict") else c for c in _citas])
 
 
 @citas_bp.route("/citas/cargar", methods=["POST"])
+@login_requerido
 def cargar_citas():
     """Carga las citas desde Insumos/Citas.xlsx (entrega 2)."""
     global _citas, _contador_id
@@ -323,6 +330,7 @@ def cargar_citas():
 
 
 @citas_bp.route("/citas/<int:cita_id>", methods=["GET"])
+@login_requerido
 def detalle_cita(cita_id):
     """Pantalla de detalle (P3): datos de una cita y acciones."""
     cita = next((c for c in _citas if getattr(c, "id", None) == cita_id), None)
@@ -364,6 +372,7 @@ def detalle_cita(cita_id):
 
 
 @citas_bp.route("/citas/<int:cita_id>/aprobar", methods=["POST"])
+@login_requerido
 def aprobar_cita(cita_id):
     """Aprueba una cita si el semáforo es verde."""
     global _citas
@@ -386,6 +395,7 @@ def aprobar_cita(cita_id):
 
 
 @citas_bp.route("/citas/<int:cita_id>/rechazar", methods=["POST"])
+@login_requerido
 def rechazar_cita(cita_id):
     """Rechaza una cita."""
     cita = next((c for c in _citas if getattr(c, "id", None) == cita_id), None)
@@ -396,6 +406,7 @@ def rechazar_cita(cita_id):
 
 
 @citas_bp.route("/citas/<int:cita_id>/cancelar", methods=["POST"])
+@login_requerido
 def cancelar_cita(cita_id):
     """Cancela una cita."""
     cita = next((c for c in _citas if getattr(c, "id", None) == cita_id), None)
@@ -406,6 +417,7 @@ def cancelar_cita(cita_id):
 
 
 @citas_bp.route("/citas/excel", methods=["GET"])
+@login_requerido
 def descargar_excel():
     """Descarga Excel semanal (placeholder)."""
     from flask import make_response
